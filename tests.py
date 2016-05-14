@@ -1,11 +1,9 @@
 import unittest
 
 
-import bigram_batch
-import lstm
-import skipgram_embedding
 import tensorflow as tf
 
+from lstm_dorway import bigram_batch, skipgram_embedding, lstm
 
 class EmbeddingsTest(unittest.TestCase):
 
@@ -33,7 +31,8 @@ class EmbeddingsTest(unittest.TestCase):
     def test_lstm(self):
         skipgram_embeddings = skipgram_embedding.SkipgramEmbeddings(
             2, 4, 4, 2)
-        lstm_network = lstm.Lstm(4, skipgram_embeddings, 16, 4, temperature=0.001)
+        lstm_network = lstm.Lstm(
+            4, skipgram_embeddings, 16, 4, temperature=0.001)
         text = "huj huj huj huj huj"
         with tf.Session() as session:
             skipgram_embeddings.train(session, text, 2000)

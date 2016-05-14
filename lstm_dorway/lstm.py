@@ -14,7 +14,7 @@ import collections
 from six.moves import range
 from six.moves.urllib.request import urlretrieve
 
-import bigram_batch
+from lstm_dorway import bigram_batch
 
 
 class Lstm(object):
