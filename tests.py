@@ -30,12 +30,13 @@ class EmbeddingsTest(unittest.TestCase):
             skipgram_embeddings.train(session, "huj huj huj huj huj", 100)
             embeddings = skipgram_embeddings.embeddings_value()
 
-    def lstm(self):
+    def test_lstm(self):
         skipgram_embeddings = skipgram_embedding.SkipgramEmbeddings(
-            2, 128, 64, 2)
-        lstm_network = lstm.Lstm(4, skipgram_embeddings, 64, 4)
+            2, 4, 4, 2)
+        lstm_network = lstm.Lstm(4, skipgram_embeddings, 16, 4, temperature=0.001)
         text = "huj huj huj huj huj"
         with tf.Session() as session:
             skipgram_embeddings.train(session, text, 2000)
-            lstm_network.train(session, text, 1000)
-            print(lstm_network.say(10))
+            lstm_network.train(session, text, 2000)
+            print(lstm_network.say(10,
+                                   start_from=bigram_batch.all_bigrams['hu']))

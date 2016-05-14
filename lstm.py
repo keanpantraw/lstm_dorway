@@ -19,13 +19,15 @@ import bigram_batch
 
 class Lstm(object):
 
-    def __init__(self, batch_size, embeddings, num_nodes, num_unrollings, graph=None):
+    def __init__(self, batch_size, embeddings, num_nodes, num_unrollings,
+                 temperature=0.2, graph=None):
         self._graph = graph or tf.get_default_graph()
         self._batch_size = batch_size
         self._num_nodes = num_nodes
         self._num_unrollings = num_unrollings
         self._embeddings = embeddings.embeddings_tensor()
         self._embedding_size = embeddings.embedding_size
+        self._temperature = temperature
         self._scope_name = "lstm_" + str(id(self))
         with tf.variable_scope(self._scope_name):
             self._define_lstm()
@@ -88,11 +90,13 @@ class Lstm(object):
             self._embedded_sample_input, saved_sample_output, saved_sample_state)
         with tf.control_dependencies([saved_sample_output.assign(sample_output),
                                       saved_sample_state.assign(sample_state)]):
-            self._sample_prediction = tf.nn.softmax(
+            self._sample_embedded_prediction = tf.nn.softmax(
                 tf.nn.xw_plus_b(sample_output, self._w, self._b))
-            diff = self._embeddings - self._sample_prediction
+            diff = self._embeddings - self._sample_embedded_prediction
             distance = tf.sqrt(tf.reduce_sum(diff ** 2, 1))
-            self._sample_letter = tf.arg_min(distance, 0)
+            inverse = (tf.reduce_max(distance) - distance) / self._temperature
+            prediction = tf.nn.softmax(tf.expand_dims(inverse, 0))
+            self._sample_prediction = tf.squeeze(prediction)
 
     def _define_lstm(self):
         with self._graph.as_default():
@@ -157,8 +161,22 @@ class Lstm(object):
         bigram_id = start_from or random.randint(
             0, bigram_batch.vocabulary_size - 1)
         text = bigram_batch.id2bigram(bigram_id)
+
+        def sample(distribution):
+            """Sample one element from a distribution assumed
+            to be an array of normalized probabilities.
+            """
+            r = random.uniform(0, 1)
+            s = 0
+            for i in range(len(distribution)):
+                s += distribution[i]
+                if s >= r:
+                    return i
+            return len(distribution) - 1
+
         for _ in range(length):
-            bigram_id = self._sample_letter.eval(
+            prediction = self._sample_prediction.eval(
                 {self._sample_input: [bigram_id]})
+            bigram_id = sample(prediction)
             text += bigram_batch.id2bigram(bigram_id)
         return text
