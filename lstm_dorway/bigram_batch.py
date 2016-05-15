@@ -7,6 +7,18 @@ __all__ = ['BigramGenerator', 'SkipgramGenerator',
 
 letters = sorted(set((string.ascii_letters + string.digits + " ").lower()))
 
+
+class WhitelistTable(object):
+    # there will be stories
+
+    def __init__(self, letters):
+        self._d = {ord(l): ord(l) for l in letters}
+
+    def __getitem__(self, k):
+        return self._d.get(k)
+
+trans_table = WhitelistTable(letters)
+
 all_bigrams = {x[0] + x[1]: i for i, x in
                enumerate(itertools.product(letters, letters))}
 inversed_bigrams = {i: x for x, i in all_bigrams.items()}
@@ -19,11 +31,11 @@ def id2bigram(i):
 
 
 def text_to_bigram_sequence(text):
-    text = ''.join([c for c in text if c in letters])
+    text = text.translate(trans_table)
     if len(text) % 2 != 0:
         text += " "
-    sequence = [text[i:i + 2] for i in range(0, len(text), 2)]
-    return np.array([all_bigrams[x] for x in sequence], dtype=np.int16)
+    sequence = [all_bigrams[text[i:i + 2]] for i in range(0, len(text), 2)]
+    return np.array(sequence, dtype=np.int16)
 
 
 class BatchGenerator(object):
